@@ -1,0 +1,86 @@
+<?xml  version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:security="http://www.springframework.org/schema/security"  
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+                           http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+                           http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.0.xsd">
+
+ 
+    <context:component-scan base-package="com.blog.controller" />
+    <context:component-scan base-package="com.blog.model" />
+    <context:component-scan base-package="com.blog.dao" />
+    <context:component-scan base-package="com.blog.services" />
+   
+    <mvc:annotation-driven/>
+    
+    
+        <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        	<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+            <property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
+            <property name="username" value="sivagami"/>
+            <property name="password" value="niit"/>
+        </bean>
+
+<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+<property name="dataSource" ref="dataSource"/>
+<property name="packagesToScan">
+<list>
+<value>com.blog</value>
+</list>
+</property>
+<property name="hibernateProperties">
+<props>
+<prop key="hibernate.dialect">org.hibernate.dialect.OracleDialect</prop>
+<prop key="hibernate.hbm2ddl.auto">update</prop>
+<prop key="hibernate.show_sql">true</prop>
+<!-- <prop key="hibernate.format_sql">true</prop> -->
+</props>
+</property>
+</bean>
+    
+    <tx:annotation-driven/>
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+    <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+    
+    <!-- To Validate -->
+    <bean id="userValidator" class="com.blog.validator.UserValidator"/>
+    <bean id="blogValidator" class="com.blog.validator.BlogValidator"/>
+    <bean id="commentValidator" class="com.blog.validator.CommentValidator"/>
+    <bean id="forumValidator" class="com.blog.validator.ForumValidator"/>
+    <bean id="answerValidator" class="com.blog.validator.AnswerValidator"/>
+        
+ <!--    Security to Login -->
+ <security:http auto-config="true">
+        <!-- <security:intercept-url pattern="/com.happy/**" access="permitAll" /> 
+        <security:form-login login-page="/signup" default-target-url="/" authentication-failure-url="/login?error"  username-parameter="userName"  password-parameter="password" /> 
+        <security:logout logout-success-url="/login?logout" />  -->
+         <security:intercept-url pattern="/com.blog/**" access="hasRole({'ROLE_USER','ROLE_ADMIN'})"/>
+        <security:form-login login-page="/login" default-target-url="/" authentication-failure-url="/login?error"  username-parameter="username"  password-parameter="password" /> 
+        <security:logout logout-success-url="/login?logout" />
+        <security:intercept-url pattern="/com.blog/**" access="hasRole({'ROLE_ADMIN'})"/>
+        <security:form-login login-page="/login" default-target-url="/index" authentication-failure-url="/login?error"  username-parameter="username"  password-parameter="password" /> 
+        <security:logout logout-success-url="/login?logout" />      
+  <security:csrf disabled="true"/>
+    </security:http>
+  
+    <security:authentication-manager>
+        <security:authentication-provider>
+           <security:jdbc-user-service data-source-ref="dataSource"
+           authorities-by-username-query="SELECT u.username, r.roleName from userdetails u,userrole r WHERE u.userId=r.roleId+1 and u.username =?" 
+    users-by-username-query="SELECT username,password,enable from userdetails WHERE username=?"/>
+               </security:authentication-provider>
+         </security:authentication-manager> 
+         
+<!-- to set the size of image -->
+    <bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+	<property name="maxUploadSize" value="10000000000"/>
+	</bean>
+	
+</beans>
